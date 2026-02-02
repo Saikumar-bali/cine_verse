@@ -23,8 +23,10 @@ function Page({ title, element }: PageProps) {
 }
 
 function App() {
+    console.log('App component rendering...');
+    
     return (
-        <BrowserRouter>
+        <BrowserRouter basename="/cine_verse">
             <div className="app">
                 <Navbar />
                 <Routes>
