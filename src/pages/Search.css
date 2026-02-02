@@ -1,0 +1,10 @@
+.search-page {
+    padding: 2rem;
+}
+
+.search-page h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 2rem;
+    color: var(--dark);
+}
