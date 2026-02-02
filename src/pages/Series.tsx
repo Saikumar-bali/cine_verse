@@ -5,7 +5,7 @@ import '../pages/Home.css';
 
 export default function Series() {
     const [series, setSeries] = useState<any[]>([]);
-    const [search, setSearch] = useState('');
+    const [search] = useState('');
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {

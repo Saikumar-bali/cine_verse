@@ -54,8 +54,8 @@ export default function Home() {
         })
         : trendingMovies;
 
-    const filteredSeries = selectedGenre
-        ? trendingSeries.filter(s => {
+const filteredSeries = selectedGenre
+        ? trendingSeries.filter(() => {
             // Assuming series also have genres, if not fetched, they won't filter well.
             return true;
         })
@@ -113,11 +113,11 @@ export default function Home() {
                         <button
                             key={genre as string}
                             onClick={() => setSelectedGenre(genre as string)}
-                            style={{
-                                padding: '8px 20px', borderRadius: '20px', border: 'none', cursor: 'pointer',
+style={{
+                                padding: '8px 20px', borderRadius: '20px', cursor: 'pointer',
                                 background: selectedGenre === genre ? 'var(--primary-color)' : 'white',
                                 color: selectedGenre === genre ? 'white' : 'var(--text-main)', fontWeight: 600, whiteSpace: 'nowrap',
-                                border: '1px solid rgba(0,0,0,0.05)',
+                                border: selectedGenre === genre ? 'none' : '1px solid rgba(0,0,0,0.05)',
                                 boxShadow: selectedGenre === genre ? '0 4px 10px rgba(98,0,234,0.3)' : 'none'
                             }}
                         >
