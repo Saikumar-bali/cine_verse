@@ -106,12 +106,3 @@
   pointer-events: none;
 }
 
-@media (max-width: 768px) {
-  .nav-links {
-    display: none;
-  }
-
-  .search-bar {
-    width: 200px;
-  }
-}

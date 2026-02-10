@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { Link } from 'react-router-dom';
 import './Home.css';
@@ -8,6 +8,8 @@ export default function Home() {
     const [trendingSeries, setTrendingSeries] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedGenre, setSelectedGenre] = useState<string | null>(null);
+    const [heroIndex, setHeroIndex] = useState(0);
+    const genreScrollRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
         fetchTrending();
@@ -48,7 +50,7 @@ export default function Home() {
 
             const { data: series } = await supabase
                 .from('series')
-                .select('id, name, poster_path, vote_average, first_air_date')
+                .select('id, name, poster_path, vote_average, first_air_date, overview, backdrop_path, data')
                 .order('popularity', { ascending: false });
 
             setTrendingMovies(movies || []);
@@ -88,42 +90,93 @@ export default function Home() {
         : trendingSeries;
 
 
-    if (loading) return <div className="loading"><div className="spinner"></div></div>;
+    const heroItems = useMemo(() => {
+        const movieItems = filteredMovies.slice(0, 3).map(m => ({ ...m, _type: 'movie' as const, _title: m.title }));
+        const seriesItems = filteredSeries.slice(0, 2).map(s => ({ ...s, _type: 'series' as const, _title: s.name }));
+        return [...movieItems, ...seriesItems].slice(0, 5);
+    }, [filteredMovies, filteredSeries]);
 
-    const FeaturedMovie = filteredMovies[0] || trendingMovies[0];
+    useEffect(() => {
+        if (heroItems.length <= 1) return;
+        const id = setInterval(() => {
+            setHeroIndex(prev => (prev + 1) % heroItems.length);
+        }, 5000);
+        return () => clearInterval(id);
+    }, [heroItems.length]);
+
+    useEffect(() => {
+        if (heroIndex >= heroItems.length) {
+            setHeroIndex(0);
+        }
+    }, [heroItems.length, heroIndex]);
+
+    const activeHero = heroItems[heroIndex];
+    const goPrev = () => {
+        if (heroItems.length === 0) return;
+        setHeroIndex(prev => (prev - 1 + heroItems.length) % heroItems.length);
+    };
+    const goNext = () => {
+        if (heroItems.length === 0) return;
+        setHeroIndex(prev => (prev + 1) % heroItems.length);
+    };
+    const scrollGenres = (dir: 'left' | 'right') => {
+        const el = genreScrollRef.current;
+        if (!el) return;
+        const amount = Math.max(200, Math.floor(el.clientWidth * 0.6));
+        el.scrollBy({ left: dir === 'right' ? amount : -amount, behavior: 'smooth' });
+    };
+
+    if (loading) return <div className="loading"><div className="spinner"></div></div>;
 
     return (
         <div className="home fade-in">
-            {FeaturedMovie && (
-                <div className="hero" style={{
-                    backgroundImage: `linear-gradient(to bottom, rgba(255,255,255,0.2), var(--bg-color)), url(${FeaturedMovie.backdrop_path || FeaturedMovie.poster_path})`,
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
-                    height: '60vh',
-                    display: 'flex',
-                    alignItems: 'flex-end',
-                    padding: '2rem',
-                    position: 'relative'
-                }}>
-                    <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: 'linear-gradient(to bottom, transparent 40%, var(--bg-color) 100%)' }}></div>
+            {activeHero && (
+                <section className="hero">
+                    <div
+                        className="hero-media"
+                        style={{ backgroundImage: `url(${activeHero.backdrop_path || activeHero.data?.backdrop_path || activeHero.poster_path || activeHero.data?.poster_path})` }}
+                    ></div>
+                    <div className="hero-gradient"></div>
 
-                    <div className="hero-content" style={{ maxWidth: '800px', position: 'relative', zIndex: 2 }}>
-                        <h1 style={{ fontSize: '3rem', marginBottom: '1rem', color: 'var(--text-main)', textShadow: '2px 2px 4px rgba(255,255,255,0.5)' }}>
-                            {FeaturedMovie.title}
-                        </h1>
-                        <p style={{ fontSize: '1.2rem', color: 'var(--text-main)', marginBottom: '2rem', maxWidth: '600px', background: 'rgba(255,255,255,0.7)', padding: '15px', borderRadius: '12px', backdropFilter: 'blur(5px)' }}>
-                            {FeaturedMovie.overview ? (FeaturedMovie.overview.substring(0, 150) + '...') : 'Top trending movie. Watch now in high quality.'}
-                        </p>
-                        <Link to={`/movie/${FeaturedMovie.id}`} className="card-button" style={{ display: 'inline-block', width: 'auto', padding: '12px 30px', background: 'var(--primary-color)', color: '#fff', border: 'none' }}>
-                            Watch Now <span style={{ fontSize: '1.2rem', marginLeft: '5px' }}>▶</span>
-                        </Link>
+                    <div className="hero-inner">
+                        <button type="button" className="hero-control left" onClick={goPrev} aria-label="Previous">
+                            ‹
+                        </button>
+                        <button type="button" className="hero-control right" onClick={goNext} aria-label="Next">
+                            ›
+                        </button>
+                        <div className="hero-content">
+                            <h1 className="hero-title">{activeHero._title}</h1>
+                            <div className="hero-meta">
+                                <span className="hero-rating">* {Number(activeHero.vote_average || activeHero.data?.vote_average || 0).toFixed(1)}</span>
+                                <span className="hero-dot">.</span>
+                                <span className="hero-year">{((activeHero.release_date || activeHero.first_air_date || activeHero.data?.release_date || activeHero.data?.first_air_date || '') as string).split('-')[0] || 'N/A'}</span>
+                            </div>
+                            <p className="hero-desc">
+                                {activeHero.overview || activeHero.data?.overview
+                                    ? ((activeHero.overview || activeHero.data?.overview).substring(0, 170) + '...')
+                                    : 'Top trending pick. Watch now in high quality.'}
+                            </p>
+                            <div className="hero-actions">
+                                <Link to={`/${activeHero._type}/${activeHero.id}`} className="hero-cta">
+                                    Watch Now <span className="hero-cta-icon">Play</span>
+                                </Link>
+                                <Link to={`/${activeHero._type}/${activeHero.id}`} className="hero-ghost">
+                                    Details
+                                </Link>
+                            </div>
+                        </div>
                     </div>
-                </div>
+                </section>
             )}
 
             {/* Genre Filter Bar */}
             <div className="section" style={{ paddingBottom: '0' }}>
-                <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '10px', scrollbarWidth: 'none' }}>
+                <div className="genre-bar">
+                    <button type="button" className="genre-scroll left" onClick={() => scrollGenres('left')} aria-label="Scroll genres left">
+                        ‹
+                    </button>
+                    <div ref={genreScrollRef} className="genre-scroll-area">
                     <button
                         onClick={() => setSelectedGenre(null)}
                         style={{
@@ -150,6 +203,10 @@ export default function Home() {
                             {genre as string}
                         </button>
                     ))}
+                    </div>
+                    <button type="button" className="genre-scroll right" onClick={() => scrollGenres('right')} aria-label="Scroll genres right">
+                        ›
+                    </button>
                 </div>
             </div>
 

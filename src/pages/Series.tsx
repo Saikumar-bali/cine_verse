@@ -18,8 +18,7 @@ export default function Series() {
             let query = supabase
                 .from('series')
                 .select('id, name, poster_path, vote_average, first_air_date, data')
-                .order('popularity', { ascending: false })
-                .limit(50);
+                .order('popularity', { ascending: false });
 
             if (search) {
                 query = query.ilike('name', `%${search}%`);
