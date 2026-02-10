@@ -17,7 +17,7 @@ export default function Series() {
         try {
             let query = supabase
                 .from('series')
-                .select('id, name, poster_path, vote_average, first_air_date')
+                .select('id, name, poster_path, vote_average, first_air_date, data')
                 .order('popularity', { ascending: false })
                 .limit(50);
 
@@ -49,16 +49,21 @@ export default function Series() {
                 <div className="loading">Loading...</div>
             ) : (
                 <div className="grid">
-                    {series.map(s => (
-                        <Link key={s.id} to={`/series/${s.id}`} className="card">
-                            <img src={s.poster_path} alt={s.name} />
-                            <div className="card-info">
-                                <h3>{s.name}</h3>
-                                <span>₹{s.vote_average?.toFixed(1)} Rating</span>
-                                <div className="card-button">View Collection</div>
-                            </div>
-                        </Link>
-                    ))}
+                    {series.map(s => {
+                        const poster = s.poster_path || s.data?.poster_path || 'https://via.placeholder.com/500x750?text=No+Poster';
+                        const rating = s.vote_average || s.data?.vote_average || 0;
+
+                        return (
+                            <Link key={s.id} to={`/series/${s.id}`} className="card">
+                                <img src={poster} alt={s.name} />
+                                <div className="card-info">
+                                    <h3>{s.name}</h3>
+                                    <span>⭐ {rating.toFixed(1)} Rating</span>
+                                    <div className="card-button">View Collection</div>
+                                </div>
+                            </Link>
+                        );
+                    })}
                 </div>
             )}
         </div>

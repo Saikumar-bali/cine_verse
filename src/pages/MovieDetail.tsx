@@ -31,6 +31,23 @@ export default function MovieDetail() {
         }
     }
 
+    // Helper functions to resolve missing data from the 'data' blob
+    const getPoster = () => {
+        if (movie?.poster_path && movie.poster_path !== "") return movie.poster_path;
+        if (movie?.data && movie.data.poster_path) return movie.data.poster_path;
+        return 'https://via.placeholder.com/500x750?text=No+Poster';
+    };
+
+    const getBackdrop = () => {
+        if (movie?.backdrop_path && movie.backdrop_path !== "") return movie.backdrop_path;
+        if (movie?.data && movie.data.backdrop_path) return movie.data.backdrop_path;
+        return 'https://via.placeholder.com/1280x720?text=No+Backdrop';
+    };
+
+    const getReleaseDate = () => movie?.release_date || movie?.data?.release_date || 'N/A';
+    const getRating = () => movie?.vote_average || movie?.data?.vote_average || 0;
+    const getOverview = () => movie?.overview || movie?.data?.overview || 'No overview available.';
+
     if (loading) return <div className="loading"><div className="spinner"></div></div>;
     if (!movie) return <div className="loading">Movie not found</div>;
 
@@ -57,12 +74,13 @@ export default function MovieDetail() {
 
     // Helper to extract genres safely
     const getGenres = () => {
-        let genres: any[] = [];
-        try {
-            if (movie.genres) {
-                genres = typeof movie.genres === 'string' ? JSON.parse(movie.genres) : movie.genres;
-            }
-        } catch (e) { console.error(e); }
+        let genres = movie.genres;
+        if (!genres || (Array.isArray(genres) && genres.length === 0)) {
+            genres = movie.data?.genres;
+        }
+        if (typeof genres === 'string') {
+            try { genres = JSON.parse(genres); } catch { genres = []; }
+        }
         return Array.isArray(genres) ? genres : [];
     };
 
@@ -97,23 +115,23 @@ export default function MovieDetail() {
                 </div>
             )}
 
-            <div className="detail-backdrop" style={{ backgroundImage: `url(${movie.backdrop_path})` }}>
+            <div className="detail-backdrop" style={{ backgroundImage: `url(${getBackdrop()})` }}>
                 <div className="detail-overlay"></div>
             </div>
             <div className="detail-content">
-                <img src={movie.poster_path} alt={movie.title} className="detail-poster" />
+                <img src={getPoster()} alt={movie.title} className="detail-poster" />
                 <div className="detail-info">
                     <h1>{movie.title}</h1>
                     <div className="meta">
-                        <span className="rating">⭐ {movie.vote_average?.toFixed(1)}</span>
-                        <span>{movie.release_date}</span>
+                        <span className="rating">⭐ {getRating().toFixed(1)}</span>
+                        <span>{getReleaseDate()}</span>
                         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                            {genreList.map((g: any, i: number) => (
+                            {genreList.filter(g => g && g.name).map((g: any, i: number) => (
                                 <GenreBadge key={g.id || i} name={g.name} />
                             ))}
                         </div>
                     </div>
-                    <p className="overview">{movie.overview}</p>
+                    <p className="overview">{getOverview()}</p>
 
                     <div className="videos">
                         <h3>Watch Options</h3>

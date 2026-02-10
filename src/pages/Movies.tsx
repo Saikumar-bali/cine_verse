@@ -17,7 +17,7 @@ export default function Movies() {
         try {
             let query = supabase
                 .from('movies')
-                .select('id, title, poster_path, vote_average, release_date')
+                .select('id, title, poster_path, vote_average, release_date, data')
                 .order('popularity', { ascending: false })
                 .limit(50);
 
@@ -49,16 +49,21 @@ export default function Movies() {
                 <div className="loading">Loading...</div>
             ) : (
                 <div className="grid">
-                    {movies.map(movie => (
-                        <Link key={movie.id} to={`/movie/${movie.id}`} className="card">
-                            <img src={movie.poster_path} alt={movie.title} />
-                            <div className="card-info">
-                                <h3>{movie.title}</h3>
-                                <span>₹{movie.vote_average?.toFixed(1)} Rating</span>
-                                <div className="card-button">View Collection</div>
-                            </div>
-                        </Link>
-                    ))}
+                    {movies.map(movie => {
+                        const poster = movie.poster_path || movie.data?.poster_path || 'https://via.placeholder.com/500x750?text=No+Poster';
+                        const rating = movie.vote_average || movie.data?.vote_average || 0;
+
+                        return (
+                            <Link key={movie.id} to={`/movie/${movie.id}`} className="card">
+                                <img src={poster} alt={movie.title} />
+                                <div className="card-info">
+                                    <h3>{movie.title}</h3>
+                                    <span>⭐ {rating.toFixed(1)} Rating</span>
+                                    <div className="card-button">View Collection</div>
+                                </div>
+                            </Link>
+                        );
+                    })}
                 </div>
             )}
         </div>

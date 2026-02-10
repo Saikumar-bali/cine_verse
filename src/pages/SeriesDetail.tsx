@@ -32,14 +32,37 @@ export default function SeriesDetail() {
         }
     }
 
+    // Helper functions to resolve missing data from the 'data' blob
+    const getPoster = () => {
+        if (series?.poster_path && series.poster_path !== "") return series.poster_path;
+        if (series?.data && series.data.poster_path) return series.data.poster_path;
+        return 'https://via.placeholder.com/500x750?text=No+Poster';
+    };
+
+    const getBackdrop = () => {
+        if (series?.backdrop_path && series.backdrop_path !== "") return series.backdrop_path;
+        if (series?.data && series.data.backdrop_path) return series.data.backdrop_path;
+        return 'https://via.placeholder.com/1280x720?text=No+Backdrop';
+    };
+
+    const getFirstAirDate = () => series?.first_air_date || series?.data?.first_air_date || 'N/A';
+    const getRating = () => series?.vote_average || series?.data?.vote_average || 0;
+    const getOverview = () => series?.overview || series?.data?.overview || 'No overview available.';
+
     if (loading) return <div className="loading"><div className="spinner"></div></div>;
     if (!series) return <div className="loading">Series not found</div>;
 
     // Parse genres safely
     let genreList: any[] = [];
     try {
-        if (series.genres) {
-            genreList = typeof series.genres === 'string' ? JSON.parse(series.genres) : series.genres;
+        let genres = series.genres;
+        if (!genres || (Array.isArray(genres) && genres.length === 0)) {
+            genres = series.data?.genres;
+        }
+        if (typeof genres === 'string') {
+            genreList = JSON.parse(genres);
+        } else if (Array.isArray(genres)) {
+            genreList = genres;
         }
     } catch (e) { console.error(e); }
 
@@ -75,23 +98,23 @@ export default function SeriesDetail() {
                 </div>
             )}
 
-            <div className="detail-backdrop" style={{ backgroundImage: `url(${series.backdrop_path})` }}>
+            <div className="detail-backdrop" style={{ backgroundImage: `url(${getBackdrop()})` }}>
                 <div className="detail-overlay"></div>
             </div>
             <div className="detail-content">
-                <img src={series.poster_path} alt={series.name} className="detail-poster" />
+                <img src={getPoster()} alt={series.name} className="detail-poster" />
                 <div className="detail-info">
                     <h1>{series.name}</h1>
                     <div className="meta">
-                        <span className="rating">⭐ {series.vote_average?.toFixed(1)}</span>
-                        <span>{series.first_air_date}</span>
+                        <span className="rating">⭐ {getRating().toFixed(1)}</span>
+                        <span>{getFirstAirDate()}</span>
                         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                            {genreList.map((g: any, i: number) => (
+                            {genreList.filter(g => g && g.name).map((g: any, i: number) => (
                                 <GenreBadge key={g.id || i} name={g.name} />
                             ))}
                         </div>
                     </div>
-                    <p className="overview">{series.overview}</p>
+                    <p className="overview">{getOverview()}</p>
 
                     {seasons.length > 0 && (
                         <div className="seasons">

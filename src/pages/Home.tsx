@@ -13,6 +13,31 @@ export default function Home() {
         fetchTrending();
     }, []);
 
+    // Helper functions to resolve missing data from the 'data' blob
+    const getPoster = (item: any) => {
+        if (item.poster_path && item.poster_path !== "") return item.poster_path;
+        if (item.data && item.data.poster_path) return item.data.poster_path;
+        return 'https://via.placeholder.com/500x750?text=No+Poster';
+    };
+
+    const getMeta = (item: any) => {
+        const date = item.release_date || item.first_air_date || item.data?.release_date || item.data?.first_air_date;
+        const year = date ? date.split('-')[0] : 'N/A';
+        const rating = item.vote_average || item.data?.vote_average || 0;
+        return { year, rating };
+    };
+
+    const getGenres = (item: any) => {
+        let genres = item.genres;
+        if (!genres || (Array.isArray(genres) && genres.length === 0)) {
+            genres = item.data?.genres;
+        }
+        if (typeof genres === 'string') {
+            try { return JSON.parse(genres); } catch { return []; }
+        }
+        return Array.isArray(genres) ? genres : [];
+    };
+
     async function fetchTrending() {
         try {
             // Fetching ALL data as requested
@@ -39,9 +64,10 @@ export default function Home() {
     const allGenres = Array.from(new Set(
         trendingMovies.flatMap(m => {
             try {
-                return typeof m.genres === 'string' ? JSON.parse(m.genres) : m.genres;
+                const genres = typeof m.genres === 'string' ? JSON.parse(m.genres) : m.genres;
+                return Array.isArray(genres) ? genres : [];
             } catch { return []; }
-        }).map((g: any) => g.name)
+        }).filter(g => g && g.name).map((g: any) => g.name)
     )).sort();
 
     // Filter content
@@ -54,7 +80,7 @@ export default function Home() {
         })
         : trendingMovies;
 
-const filteredSeries = selectedGenre
+    const filteredSeries = selectedGenre
         ? trendingSeries.filter(() => {
             // Assuming series also have genres, if not fetched, they won't filter well.
             return true;
@@ -113,7 +139,7 @@ const filteredSeries = selectedGenre
                         <button
                             key={genre as string}
                             onClick={() => setSelectedGenre(genre as string)}
-style={{
+                            style={{
                                 padding: '8px 20px', borderRadius: '20px', cursor: 'pointer',
                                 background: selectedGenre === genre ? 'var(--primary-color)' : 'white',
                                 color: selectedGenre === genre ? 'white' : 'var(--text-main)', fontWeight: 600, whiteSpace: 'nowrap',
@@ -130,54 +156,57 @@ style={{
             <section className="section">
                 <h2>{selectedGenre ? `${selectedGenre} Movies` : 'All Movies'}</h2>
                 <div className="grid">
-                    {filteredMovies.map(movie => (
-                        <Link key={movie.id} to={`/movie/${movie.id}`} className="card">
-                            <img src={movie.poster_path} alt={movie.title} loading="lazy" />
-                            <div className="card-info">
-                                <h3>{movie.title}</h3>
-                                <div className="card-meta">
-                                    <span className="rating">⭐ {movie.vote_average?.toFixed(1)}</span>
-                                    <span>{movie.release_date?.split('-')[0]}</span>
-                                </div>
-                                {/* Display first genre if available and parsed correctly */}
-                                {movie.genres && typeof movie.genres === 'string' ? (
-                                    <div style={{ marginBottom: '10px' }}>
-                                        {(() => {
-                                            try {
-                                                const g = JSON.parse(movie.genres);
-                                                return g.slice(0, 2).map((gen: any) => (
-                                                    <span key={gen.id} style={{ fontSize: '0.7rem', color: 'white', marginRight: '5px', background: 'var(--primary-color)', padding: '2px 8px', borderRadius: '10px' }}>
-                                                        {gen.name}
-                                                    </span>
-                                                ));
-                                            } catch (e) { return null; }
-                                        })()}
-                                    </div>
-                                ) : null}
+                    {filteredMovies.map(movie => {
+                        const { year, rating } = getMeta(movie);
+                        const genres = getGenres(movie);
 
-                                <div className="card-button">View Details</div>
-                            </div>
-                        </Link>
-                    ))}
+                        return (
+                            <Link key={movie.id} to={`/movie/${movie.id}`} className="card">
+                                <img src={getPoster(movie)} alt={movie.title} loading="lazy" />
+                                <div className="card-info">
+                                    <h3>{movie.title}</h3>
+                                    <div className="card-meta">
+                                        <span className="rating">⭐ {rating.toFixed(1)}</span>
+                                        <span>{year}</span>
+                                    </div>
+
+                                    {genres.length > 0 && (
+                                        <div style={{ marginBottom: '10px' }}>
+                                            {genres.slice(0, 2).map((gen: any, idx: number) => (
+                                                <span key={gen.id || idx} style={{ fontSize: '0.7rem', color: 'white', marginRight: '5px', background: 'var(--primary-color)', padding: '2px 8px', borderRadius: '10px' }}>
+                                                    {gen.name}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    <div className="card-button">View Details</div>
+                                </div>
+                            </Link>
+                        );
+                    })}
                 </div>
             </section>
 
             <section className="section">
                 <h2>All Series</h2>
                 <div className="grid">
-                    {filteredSeries.map(s => (
-                        <Link key={s.id} to={`/series/${s.id}`} className="card">
-                            <img src={s.poster_path} alt={s.name} loading="lazy" />
-                            <div className="card-info">
-                                <h3>{s.name}</h3>
-                                <div className="card-meta">
-                                    <span className="rating">⭐ {s.vote_average?.toFixed(1)}</span>
-                                    <span>{s.first_air_date?.split('-')[0]}</span>
+                    {filteredSeries.map(s => {
+                        const { year, rating } = getMeta(s);
+                        return (
+                            <Link key={s.id} to={`/series/${s.id}`} className="card">
+                                <img src={getPoster(s)} alt={s.name} loading="lazy" />
+                                <div className="card-info">
+                                    <h3>{s.name}</h3>
+                                    <div className="card-meta">
+                                        <span className="rating">⭐ {rating.toFixed(1)}</span>
+                                        <span>{year}</span>
+                                    </div>
+                                    <div className="card-button">View Details</div>
                                 </div>
-                                <div className="card-button">View Details</div>
-                            </div>
-                        </Link>
-                    ))}
+                            </Link>
+                        );
+                    })}
                 </div>
             </section>
         </div>
