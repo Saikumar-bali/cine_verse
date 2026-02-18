@@ -69,28 +69,38 @@ VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 
 ## 🏗️ Build & Deployment
 
-### Production Build
+This project is configured to work on both **GitHub Pages** and **Render**.
+
+### 🛠️ Production Build
 ```bash
 npm run build
 npm run preview
 ```
 
-### Automated Deployment
-This project uses GitHub Actions for automatic deployment to GitHub Pages. The workflow:
+### 🌍 Deployment Options
+
+#### 1. GitHub Pages (Automated)
+- The project automatically deploys to GitHub Pages via GitHub Actions whenever you push to the `main` branch.
+- The base path is automatically set to `/cine_verse/` in the workflow.
+- **Live Website:** [https://saikumar-bali.github.io/cine_verse](https://saikumar-bali.github.io/cine_verse)
+
+#### 2. Render (Recommended)
+- **Automatic Setup:** Render will automatically detect the `render.yaml` file in this repository and configure everything for you.
+- **Manual Setup (Static Site):**
+  - **Build Command:** `npm run build`
+  - **Publish Directory:** `dist`
+  - **Redirects/Rewrites:** Add a rewrite rule (Source: `/*`, Destination: `/index.html`) to handle client-side routing.
+  - **Environment Variables:** Add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in the Render dashboard.
+- **Base URL:** By default, it uses `/` (root), which is perfect for Render.
+
+### 🤖 Automated Workflow
+The project uses GitHub Actions for automatic deployment. The workflow:
 
 1. **Triggers** on push to main branch
-2. **Builds** the React application 
-3. **Deploys** to GitHub Pages automatically
-4. **Updates** the live site at `saikumar-bali.github.io/cine_verse`
+2. **Sets** `VITE_BASE_URL` to `/cine_verse/` for GitHub Pages
+3. **Builds** the React application 
+4. **Deploys** to GitHub Pages automatically
 
-### Manual Deployment
-```bash
-# Build for production
-npm run build
-
-# Deploy to GitHub Pages
-npm run deploy
-```
 
 ## 🔒 Security
 
