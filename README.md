@@ -1,6 +1,6 @@
 # 🎬 CineVerse - Modern Movie & Series Streaming Platform
 
-**Live Website:** [https://saikumar-bali.github.io/cine_verse](https://saikumar-bali.github.io/cine_verse)
+**Live Website:** [https://cine-verse-v3fs.onrender.com]
 
 A modern, responsive movie and series browsing website built with cutting-edge web technologies. Discover, search, and explore your favorite movies and TV series with a sleek user interface.
 
