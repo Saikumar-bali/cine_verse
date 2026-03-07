@@ -1,3 +1,12 @@
+const HOST_REWRITE_MAP = {
+    'mbmove.mycdn-mb.xyz': 'mbmove.aws-s3-cloud.space',
+    'mbmove26.mycdn-mb.xyz': 'mbmove.aws-s3-cloud.space',
+    'mbserie.mycdn-mb.xyz': 'mbserie.aws-s3-cloud.space',
+    'mbserie26.mycdn-mb.xyz': 'mbserie.aws-s3-cloud.space',
+    'mbfile.mycdn-mb.xyz': 'mbfile.aws-s3-cloud.space',
+    'mb-r2.mycdn-mb.xyz': 'mb-r2.aws-s3-cloud.space',
+};
+
 function readExtraHeaders() {
     const raw = process.env.PLAYBACK_PROVIDER_EXTRA_HEADERS_JSON;
     if (!raw) return {};
@@ -32,6 +41,25 @@ export function normalizeMediaLink(link) {
     if (trimmed.startsWith('//')) return `https:${trimmed}`;
 
     return `https://${trimmed.replace(/^\/+/, '')}`;
+}
+
+export function rewriteProviderHost(mediaUrl) {
+    if (!mediaUrl) return '';
+
+    const url = new URL(mediaUrl);
+    const rewrittenHost = HOST_REWRITE_MAP[url.hostname.toLowerCase()];
+    if (rewrittenHost) {
+        url.hostname = rewrittenHost;
+    }
+
+    return url.toString();
+}
+
+export function resolveProviderMediaUrl(link) {
+    const normalized = normalizeMediaLink(link);
+    if (!normalized) return '';
+
+    return rewriteProviderHost(normalized);
 }
 
 export function getAllowedHosts() {
@@ -87,6 +115,7 @@ export function buildProviderHeaders(req, source = {}) {
 export function getProviderConfigSummary() {
     return {
         allowed_hosts: getAllowedHosts(),
+        rewritten_hosts: HOST_REWRITE_MAP,
         has_referer: Boolean(process.env.PLAYBACK_PROVIDER_REFERER),
         has_origin: Boolean(process.env.PLAYBACK_PROVIDER_ORIGIN),
         has_authorization: Boolean(process.env.PLAYBACK_PROVIDER_AUTHORIZATION),

@@ -1,5 +1,5 @@
 import { Readable } from 'node:stream';
-import { assertAllowedHost, buildProviderHeaders, normalizeMediaLink } from './provider.js';
+import { assertAllowedHost, buildProviderHeaders, resolveProviderMediaUrl } from './provider.js';
 import { noStore, safeReadText, sendJson } from './http.js';
 
 const PASSTHROUGH_HEADERS = [
@@ -21,7 +21,7 @@ function passthroughHeaders(upstream, res) {
 }
 
 export async function proxySource(req, res, source, context = {}) {
-    const mediaUrl = normalizeMediaLink(source?.link);
+    const mediaUrl = resolveProviderMediaUrl(source?.link);
     if (!mediaUrl) {
         return sendJson(res, 404, { error: 'Playback source link missing.', context });
     }
@@ -48,7 +48,10 @@ export async function proxySource(req, res, source, context = {}) {
         clearTimeout(timeoutId);
         return sendJson(res, 502, {
             error: `Upstream fetch failed: ${error.message}`,
-            context,
+            context: {
+                ...context,
+                media_url: mediaUrl,
+            },
         });
     }
 
@@ -60,7 +63,10 @@ export async function proxySource(req, res, source, context = {}) {
             error: 'Provider denied or failed playback request.',
             provider_status: upstream.status,
             preview,
-            context,
+            context: {
+                ...context,
+                media_url: mediaUrl,
+            },
         });
     }
 
@@ -82,7 +88,10 @@ export async function proxySource(req, res, source, context = {}) {
         if (!res.headersSent) {
             sendJson(res, 502, {
                 error: `Proxy stream failed: ${error.message}`,
-                context,
+                context: {
+                    ...context,
+                    media_url: mediaUrl,
+                },
             });
             return;
         }
